@@ -1,0 +1,59 @@
+# Build artifacts
+*.o
+*.so
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+
+# Capture files (sensitive and large)
+*.pcap
+*.pcapng
+*.cap
+
+# Hash files
+*.22000
+*.hash
+*.john
+
+# Logs
+*.log
+logs/
+
+# Dump directories
+dump/
+hs/
+wps/
+
+# Work directories
+/sniffixx/
+/sniffix/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large files
+*.bin
+
+# WPS PIN file (90MB - download separately)
+# wget https://raw.githubusercontent.com/USER/sniffixx/main/wps-pins-all-possible.txt
+wps-pins-all-possible.txt
+
+# Planning (development only)
+.planning/
+
+# Temp files
+*.tmp
+*.bak
+*.orig
+
+# Backup files
+*.bak
