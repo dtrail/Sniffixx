@@ -4,6 +4,9 @@ set -euo pipefail
 # Sniffixx Installer
 # Usage: ./install.sh [--uninstall]
 
+# Get script directory dynamically (must be first)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 VERSION=$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "1.0.0")
 
 # Colors
@@ -11,9 +14,6 @@ RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
-
-# Get script directory dynamically
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Default installation paths
 INSTALL_TARGET="/usr/local/bin"
