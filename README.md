@@ -85,6 +85,28 @@ mkdir -p /sniffixx/{hs,wps,dump,dump/{tcp,pmkid,tshark,22000},logs}
 export SNX_ONESHOT=/path/to/oneshot.py
 ```
 
+## Quick Start
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/dtrail/sniffixx.git
+   cd sniffixx
+   ```
+
+2. Install:
+   ```bash
+   chmod +x install.sh
+   sudo ./install.sh
+   ```
+
+3. Run:
+   ```bash
+   sniffixx
+   ```
+
+4. Select your WiFi adapter from the menu
+5. Choose your attack vector (scan, capture, crack, etc.)
+
 ## Usage
 
 ### Start Sniffixx
@@ -97,6 +119,16 @@ sniffixx
 sniffixx --help     # Show help
 sniffixx --version  # Show version
 ```
+
+### Screenshots
+
+*Screenshots coming soon*
+
+Current terminal output includes:
+- ASCII banner on startup
+- Colored menu system
+- Progress indicators during attacks
+- Result summaries after operations
 
 ### Main Menu Options
 
@@ -138,18 +170,36 @@ Default: `/sniffixx/logs`
 
 Session logs and results are saved here.
 
-## Disclaimer
+## ⚠️ Disclaimer
 
 **FOR AUTHORIZED PENETRATION TESTING ONLY**
 
-This tool is designed for:
-- Security researchers
-- Penetration testers
+This tool is designed exclusively for:
+- Security researchers conducting authorized assessments
+- Penetration testers with explicit client authorization
 - Network administrators testing their own infrastructure
+- Bug bounty researchers with in-scope targets
 
-**DO NOT** use this tool on networks you don't own or have explicit permission to test.
+### Legal Requirements
 
-The authors are not responsible for misuse of this tool.
+**You MUST have explicit, written permission from the network owner before using this tool on any network.**
+
+Unauthorized access to computer systems is illegal in most jurisdictions. This includes:
+- Accessing WiFi networks without authorization
+- Capturing network traffic without consent
+- Attempting to crack passwords without permission
+
+### Ethical Guidelines
+
+- Only test networks you own or have written authorization to test
+- Report all vulnerabilities to the appropriate parties
+- Do not use this tool for malicious purposes
+- Respect the privacy and security of others
+
+### Liability
+
+The authors and contributors of Sniffixx are not responsible for misuse of this tool.
+By using Sniffixx, you accept full responsibility for your actions.
 
 ## License
 
@@ -162,10 +212,7 @@ MIT License — see [LICENSE](LICENSE) file for details.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Links
 
