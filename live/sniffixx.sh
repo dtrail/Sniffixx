@@ -581,7 +581,11 @@ pmkid_crack_menu() {
         ;;
 
     4)
-        echo "Returning to wordlist selection..."
+        echo "Wordlist paths:"
+        echo "  /usr/share/wordlists/rockyou.txt.gz"
+        echo "  /usr/share/wordlists/nmap.lst"
+        echo ""
+        echo "Unzip with: gunzip /usr/share/wordlists/rockyou.txt.gz"
         ;;
     5)
         echo "Returning to main menu."
@@ -590,6 +594,17 @@ pmkid_crack_menu() {
         echo "❌ Invalid option."
         ;;
     esac
+}
+
+wordlist_helper() {
+    echo "=== Wordlist Helper ==="
+    echo ""
+    echo "Common wordlist locations:"
+    ls -la /usr/share/wordlists/ 2>/dev/null || echo "No wordlists found in /usr/share/wordlists/"
+    echo ""
+    echo "Download additional wordlists:"
+    echo "  sudo apt install wordlists"
+    echo "  or use: wget https://github.com/assetnote/wordlists/releases"
 }
 
 # WPS Attack Environment - Pixie Dust Menu
