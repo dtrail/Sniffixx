@@ -5,7 +5,7 @@ set -euo pipefail
 # Usage: ./install.sh [--uninstall]
 
 # Get script directory dynamically (must be first)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd))"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 VERSION=$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo "1.0.0")
 
@@ -83,8 +83,44 @@ if [[ ${#missing_deps[@]} -gt 0 ]]; then
         echo "  - $dep"
     done
     echo ""
-    echo -e "${YELLOW}Install them with: apt install <package>${NC}"
-    exit 1
+    echo -e "${YELLOW}You can install these via the NetHunter app (e.g., by installing the 'kali-tools-wifi' metapackage) or let this script try.${NC}"
+    read -p "Attempt to install missing tools with 'apt'? (y/N): " choice
+    
+    if [[ "${choice,,}" == "y" || "${choice,,}" == "yes" ]]; then
+        echo -e "${YELLOW}Attempting to install recommended packages...${NC}"
+        # Metapackages are efficient. kali-tools-wifi covers many, but we'll also list specifics.
+        install_packages="aircrack-ng hcxdumptool hcxtools reaver hashcat nmap mdk4 tshark macchanger"
+        
+        echo "Running: sudo apt update && sudo apt install -y $install_packages"
+        if ! (sudo apt update && sudo apt install -y $install_packages); then
+            echo -e "${RED}APT installation failed. Please try installing the tools manually and re-run the script.${NC}"
+            exit 1
+        fi
+
+        # Re-check core dependencies after installation
+        echo -e "${YELLOW}Re-checking dependencies...${NC}"
+        missing_deps=()
+        check_dep "airodump-ng" "aircrack-ng"
+        check_dep "hcxdumptool"
+        check_dep "hcxpcapngtool" "hcxtools"
+        check_dep "reaver"
+        check_dep "hashcat"
+        check_dep "nmap"
+        check_dep "python3"
+        
+        if [[ ${#missing_deps[@]} -gt 0 ]]; then
+            echo -e "${RED}Some core dependencies are still missing after install attempt. Please install them manually:${NC}"
+            for dep in "${missing_deps[@]}"; do
+                echo "  - $dep"
+            done
+            exit 1
+        else
+            echo -e "${GREEN}All core dependencies are now satisfied.${NC}"
+        fi
+    else
+        echo -e "${RED}Aborting. Please install dependencies manually via the NetHunter App or apt.${NC}"
+        exit 1
+    fi
 fi
 
 echo ""

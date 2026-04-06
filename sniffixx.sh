@@ -581,11 +581,7 @@ pmkid_crack_menu() {
         ;;
 
     4)
-        echo "Wordlist paths:"
-        echo "  /usr/share/wordlists/rockyou.txt.gz"
-        echo "  /usr/share/wordlists/nmap.lst"
-        echo ""
-        echo "Unzip with: gunzip /usr/share/wordlists/rockyou.txt.gz"
+        wordlist_helper
         ;;
     5)
         echo "Returning to main menu."
@@ -1155,7 +1151,7 @@ while true; do
             scan_wps_networks
             ;;
         9)
-           wps_crack
+           special_bruteforce_menu
            ;;
            
         10)
