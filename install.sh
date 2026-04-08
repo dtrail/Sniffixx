@@ -61,13 +61,13 @@ check_dep() {
 }
 
 # Core dependencies
-check_dep "airodump-ng" "aircrack-ng"
-check_dep "hcxdumptool"
-check_dep "hcxpcapngtool" "hcxtools"
-check_dep "reaver"
-check_dep "hashcat"
-check_dep "nmap"
-check_dep "python3"
+check_dep "airodump-ng" "aircrack-ng" || true
+check_dep "hcxdumptool" || true
+check_dep "hcxpcapngtool" "hcxtools" || true
+check_dep "reaver" || true
+check_dep "hashcat" || true
+check_dep "nmap" || true
+check_dep "python3" || true
 
 # Optional but recommended
 check_dep "aireplay-ng" || true
