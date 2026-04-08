@@ -13,8 +13,6 @@
 
 A comprehensive WiFi auditing toolkit designed for Kali NetHunter. Scan, capture, crack, and analyze — all from a single terminal menu.
 
-*Note: This project is WIP!
-
 ## Features
 
 - **WiFi Adapter Management** — List, select, and manage WiFi adapters
