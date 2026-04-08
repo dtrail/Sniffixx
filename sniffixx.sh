@@ -712,7 +712,11 @@ special_bruteforce_menu() {
     
     echo ""
     echo "=== Special Brute Force (PIN File) ==="
-    read -p "Enter target BSSID: " bssid
+    read -p "Enter target BSSID (or press Enter to cancel): " bssid
+    
+    if [ -z "$bssid" ]; then
+        return 0 # Return to previous menu
+    fi
     
     if ! [[ "$bssid" =~ ^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$ ]]; then
         echo "Invalid BSSID format (expected: XX:XX:XX:XX:XX:XX)"
@@ -723,6 +727,7 @@ special_bruteforce_menu() {
     echo "Select attack method:"
     echo "1. oneshot.py (fast, WiFi interface)"
     echo "2. Monitor mode (reaver, requires monitor mode)"
+    echo "0. Back to WPS Menu"
     read -p "Choice [1]: " method
     method="${method:-1}"
     
@@ -760,6 +765,9 @@ special_bruteforce_menu() {
             reaver -i "$mon_adapter" -b "$bssid" -d 1 -f -vv -D "$PIN_FILE"
             
             airmon-ng stop "$mon_adapter" >/dev/null 2>&1
+            ;;
+        0)
+            return 0
             ;;
         *)
             echo "Invalid choice"
