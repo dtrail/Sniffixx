@@ -3,12 +3,12 @@
 **Network Auditing Toolkit for Kali NetHunter**
 
 ```
-     _   _                    _                 
-    | \ | |                  | |                
-    |  \| | _____   _____  __| | __ _  ___ ___ 
-    | . ` |/ _ \ \ / / _ \/ _` |/ _` |/ __/ _ \
-    | |\  | (_) \ V /  __/ (_| | (_| | (_|  __/
-    \_| \_/\___/ \_/ \___|\__,_|\__,_|\___\___|
+  ____        _  __ _  __ _       
+ / ___| _ __ (_)/ _(_)/ _(_)_  __
+ \___ \| '_ \| | |_| | |_| \ \/ /
+  ___) | | | | |  _| |  _| |>  < 
+ |____/|_| |_|_|_| |_|_| |_/_/\_\
+        S N I F F I X X
 ```
 
 A comprehensive WiFi auditing toolkit designed for Kali NetHunter. Scan, capture, crack, and analyze — all from a single terminal menu.
