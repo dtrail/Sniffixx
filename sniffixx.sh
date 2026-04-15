@@ -605,6 +605,8 @@ wordlist_helper() {
 
 # WPS Attack Environment - Pixie Dust Menu
 pixie_dust_menu() {
+    trap 'echo "Returning to menu..."; return 1' INT
+    
     echo "Preparing for WPS Attacks..."
     sleep 1
     echo ""
@@ -705,6 +707,8 @@ pixie_dust_menu() {
 
 # Special Brute Force using PIN file
 special_bruteforce_menu() {
+    trap 'echo "Cancelled, returning to menu..."; return 1' INT
+    
     if [[ -z "$adapter" ]]; then
         echo "No adapter selected. Please select a Wi-Fi adapter first."
         return 1
@@ -893,6 +897,8 @@ disable_monitor_mode() {
 
 # Monitor mode menu
 monitor_mode_menu() {
+    trap 'echo "Returning to menu..."; return 1' INT
+    
     while true; do
         echo "Monitor Mode Menu"
         echo "1. Enable monitor mode"
@@ -994,6 +1000,8 @@ wps_crack() {
 
 # Handshake grabber
 handshake_grabber_menu() {
+    trap 'echo "Returning to menu..."; return 1' INT
+    
     while true; do
         echo -e "${yellow}Handshake Grabber Menu${nc}"
         echo "1. Search for networks"
@@ -1158,6 +1166,8 @@ check_creds()
   done
 }
 # Main menu
+trap 'echo ""; echo "Returning to menu..."' INT
+
 while true; do
     echo ""
     echo "______________________________________"
@@ -1191,7 +1201,17 @@ while true; do
             ;;
         2)
             list_adapters
-            read -p "Enter the adapter to use: " adapter
+            if [ -z "${ADAPTER_COUNT:-0}" ] || [ "$ADAPTER_COUNT" -eq 0 ]; then
+                echo "No adapters available."
+            else
+                read -p "Enter adapter number: " adapter_num
+                if [[ ! "$adapter_num" =~ ^[0-9]+$ ]] || [ "$adapter_num" -lt 1 ] || [ "$adapter_num" -gt "$ADAPTER_COUNT" ]; then
+                    echo "Invalid selection. Please enter a number between 1 and $ADAPTER_COUNT."
+                else
+                    adapter="${ADAPTERS[$((adapter_num-1))]}"
+                    echo "Selected adapter: $adapter"
+                fi
+            fi
             ;;
        22)
             reset_adapter
