@@ -47,26 +47,6 @@ log_dir="$workdir/logs"
 
 PIN_FILE="$workdir/wps-pins-all-possible.txt"
 
-download_pin_file() {
-    local target_dir="$1"
-    local pin_url="https://raw.githubusercontent.com/dtrail/sniffixx/pins/wps-pins-all-possible.txt"
-    local pin_file="$target_dir/wps-pins-all-possible.txt"
-    
-    if [[ -f "$pin_file" ]]; then
-        return 0
-    fi
-    
-    echo -e "${YELLOW}Downloading WPS PIN file (90MB)...${NC}"
-    if curl -L -o "$pin_file" "$pin_url" 2>/dev/null; then
-        echo -e "${GREEN}✓ PIN file downloaded${NC}"
-        return 0
-    else
-        echo -e "${RED}✗ Failed to download PIN file${NC}"
-        echo "Download manually from: $pin_url"
-        return 1
-    fi
-}
-
 # hcxdumptool version detection
 check_hcxdumptool_version() {
     local version
@@ -747,7 +727,8 @@ special_bruteforce_menu() {
                 return 1
             fi
             if [[ ! -f "$PIN_FILE" ]]; then
-                download_pin_file "$workdir" || return 1
+                echo "WPS PIN file not found: $PIN_FILE"
+                return 1
             fi
             
             lock_count=0
@@ -801,7 +782,9 @@ special_bruteforce_menu() {
             airmon-ng start "$adapter" >/dev/null 2>&1
             
             if [[ ! -f "$PIN_FILE" ]]; then
-                download_pin_file "$workdir" || { airmon-ng stop "$mon_adapter" >/dev/null 2>&1; return 1; }
+                echo "WPS PIN file not found: $PIN_FILE"
+                airmon-ng stop "$mon_adapter" >/dev/null 2>&1
+                return 1
             fi
             
             lock_count=0

@@ -43,10 +43,6 @@ Thumbs.db
 # Large files
 *.bin
 
-# WPS PIN file (90MB - download separately)
-# wget https://raw.githubusercontent.com/USER/sniffixx/main/wps-pins-all-possible.txt
-wps-pins-all-possible.txt
-
 # Planning (development only)
 .planning/
 
