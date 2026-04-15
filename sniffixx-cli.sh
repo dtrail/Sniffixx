@@ -6,7 +6,7 @@ case "${1:-}" in
     --help|-h)
         echo "Sniffixx - Network Auditing Toolkit for NetHunter"
         echo ""
-        echo "Usage: sniffixx [options]"
+        echo "Usage: sniffixx-cli [options]"
         echo ""
         echo "Options:"
         echo "  --help, -h     Show this help message"

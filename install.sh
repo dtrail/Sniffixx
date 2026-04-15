@@ -27,7 +27,7 @@ fi
 
 if [[ "$UNINSTALL" == "true" ]]; then
     echo -e "${YELLOW}Uninstalling Sniffixx...${NC}"
-    rm -f "$INSTALL_TARGET/sniffixx"
+    rm -f "$INSTALL_TARGET/sniffixx-cli"
     rm -rf "$WORKDIR"
     echo -e "${GREEN}Sniffixx uninstalled successfully.${NC}"
     exit 0
@@ -140,9 +140,9 @@ mkdir -p "$WORKDIR/logs"
 echo -e "${YELLOW}Installing files...${NC}"
 
 # Copy main script
-cp "$SCRIPT_DIR/sniffixx.sh" "$INSTALL_TARGET/sniffixx"
-chmod +x "$INSTALL_TARGET/sniffixx"
-echo -e "  ${GREEN}✓${NC} Installed: $INSTALL_TARGET/sniffixx"
+cp "$SCRIPT_DIR/sniffixx-cli.sh" "$INSTALL_TARGET/sniffixx-cli"
+chmod +x "$INSTALL_TARGET/sniffixx-cli"
+echo -e "  ${GREEN}✓${NC} Installed: $INSTALL_TARGET/sniffixx-cli"
 
 # Copy Python scripts
 for script in wscan.py wpsbt.py opcapture.py target_capture.py wpshift.py; do
@@ -171,7 +171,7 @@ echo -e "${GREEN}========================================${NC}"
 echo -e "${GREEN}Installation complete!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "Run Sniffixx with: sniffixx"
+echo "Run Sniffixx with: sniffixx-cli"
 echo ""
 echo -e "${YELLOW}NOTE:${NC} oneshot.py is required for WPS attacks."
 echo "Set the SNX_ONESHOT environment variable to its location:"

@@ -10,7 +10,7 @@ SOURCE_DIR="$(dirname "$SCRIPT_DIR")"
 echo "Building Sniffixx release..."
 
 # Copy required files
-cp "$SOURCE_DIR/sniffixx.sh" "$SCRIPT_DIR/"
+cp "$SOURCE_DIR/sniffixx-cli.sh" "$SCRIPT_DIR/sniffixx-cli.sh"
 cp "$SOURCE_DIR/install.sh" "$SCRIPT_DIR/"
 cp "$SOURCE_DIR/auto_select.exp" "$SCRIPT_DIR/"
 cp "$SOURCE_DIR/opcapture.py" "$SCRIPT_DIR/"
@@ -24,7 +24,7 @@ cp "$SOURCE_DIR/README.md" "$SCRIPT_DIR/"
 cp "$SOURCE_DIR/LICENSE" "$SCRIPT_DIR/"
 
 # Make scripts executable
-chmod +x "$SCRIPT_DIR/sniffixx.sh"
+chmod +x "$SCRIPT_DIR/sniffixx-cli.sh"
 chmod +x "$SCRIPT_DIR/install.sh"
 chmod +x "$SCRIPT_DIR/rs_autoscan.sh"
 chmod +x "$SCRIPT_DIR/auto_select.exp"

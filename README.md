@@ -74,8 +74,8 @@ sudo ./install.sh
 ### Manual Install
 ```bash
 # Copy files
-sudo cp sniffixx.sh /usr/local/bin/sniffixx
-chmod +x /usr/local/bin/sniffixx
+sudo cp sniffixx-cli.sh /usr/local/bin/sniffixx-cli
+chmod +x /usr/local/bin/sniffixx-cli
 
 # Copy supporting files
 mkdir -p /sniffixx
@@ -110,7 +110,7 @@ export SNX_ONESHOT=/path/to/oneshot.py
 
 3. Run:
    ```bash
-   sniffixx
+   sniffixx-cli
    ```
 
 4. Select your WiFi adapter from the menu
@@ -126,8 +126,9 @@ sniffixx
 
 ### Command Line Options
 ```bash
-sniffixx --help     # Show help
-sniffixx --version  # Show version
+sniffixx-cli     # Show help
+sniffixx-cli --help     # Show help
+sniffixx-cli --version  # Show version
 ```
 
 
@@ -181,8 +182,6 @@ Current terminal output includes:
 ### Working Directory
 Default: `/sniffixx`
 
-```Note: Currently there's a conflict with the sniffixx binary and its working dir. If you use ZSH you might have to start Sniffixx out of another directoy - or just type it twice)```
-
 ### Log Directory
 Default: `/sniffixx/logs`
 
@@ -192,9 +191,9 @@ Session logs and results are saved here.
 
 ## To-Do
 
-- Fix command arguments for Reaver and OneShot
-- Fix bug in "WPS Special Bruteforce" and add an additional method for PIN attempts (leveraging Reaver/Bully in an uncommon way to test PINs on WPS enabled APs showed to be pretty reliable when used with a proper list. Implement grace periods for routers locking themselves during the process. This way proved to be more reliable, even faster than OneShot's online-bruteforce in some cases)
-- Fix binary naming to fix naming conflict with the working dir
+- ✅ Fix command arguments for Reaver and OneShot
+- ✅ Fix bug in "WPS Special Bruteforce" and add an additional method for PIN attempts (leveraging Reaver/Bully in an uncommon way to test PINs on WPS enabled APs showed to be pretty reliable when used with a proper list. Implement grace periods for routers locking themselves during the process. This way proved to be more reliable, even faster than OneShot's online-bruteforce in some cases)
+- ✅ Fix binary naming to fix naming conflict with the working dir
 - Fix / Extend the Captive Portal Bypass process (currently working, but requires a bit of advanced knowledge. I'll make it easier to use)
 - Implement modular extensions support (partially ready, though not yet implemented)
 - Options for lateral movement beyond exploiting routers/devices and network mapping
