@@ -194,7 +194,7 @@ Session logs and results are saved here.
 - ✅ Fix command arguments for Reaver and OneShot
 - ✅ Fix bug in "WPS Special Bruteforce" and add an additional method for PIN attempts (leveraging Reaver/Bully in an uncommon way to test PINs on WPS enabled APs showed to be pretty reliable when used with a proper list. Implement grace periods for routers locking themselves during the process. This way proved to be more reliable, even faster than OneShot's online-bruteforce in some cases)
 - ✅ Fix binary naming to fix naming conflict with the working dir
-- Fix / Extend the Captive Portal Bypass process (currently working, but requires a bit of advanced knowledge. I'll make it easier to use)
+- ✅ Fix / Extend the Captive Portal Bypass process (currently working, but requires a bit of advanced knowledge. I'll make it easier to use)
 - Implement modular extensions support (partially ready, though not yet implemented)
 - Options for lateral movement beyond exploiting routers/devices and network mapping
 - Add a self-extending viewable list for so-far unknown exploitable router models, and implement it to OneShot's vuln-list.*
