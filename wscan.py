@@ -162,8 +162,10 @@ def pick_network(nets):
         sel = input("\nChoose network number (Enter to rescan): ").strip()
         if not sel:
             return None
-        if sel.isdigit() and 1 <= (i:=int(sel)) <= len(nets):
-            return nets[i-1]
+        if sel.isdigit():
+            i = int(sel)
+            if 1 <= i <= len(nets):
+                return nets[i-1]
         print("Invalid selection.")
 
 def prompt_password(net, cred_map):
@@ -195,10 +197,11 @@ def connect(iface, ssid, psk):
 
     # Generate wpa_supplicant config
     tmp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+    safe_ssid = ssid.replace("\\", "\\\\").replace('"', '\\"')
     if not psk:
         tmp.write(f"""
 network={{
-    ssid="{ssid}"
+    ssid="{safe_ssid}"
     key_mgmt=NONE
 }}
 """)

@@ -183,9 +183,10 @@ def connect_open_network(iface, ssid):
     print()
     print(f"[*] Connecting to {ssid}...")
     conf = tempfile.NamedTemporaryFile(delete=False, mode="w")
+    safe_ssid = ssid.replace("\\", "\\\\").replace('"', '\\"')
     conf.write(f"""
 network={{
-    ssid="{ssid}"
+    ssid="{safe_ssid}"
     key_mgmt=NONE
 }}
 """)
@@ -417,6 +418,17 @@ Note: Captive portals sometimes fail to be detected. Don't worry. You can still 
         else:
             print("Invalid choice.")
 
+def get_gateway(iface):
+    route_out = subprocess.run(
+        ["ip", "route", "show", "dev", iface],
+        capture_output=True, text=True
+    ).stdout
+    for line in route_out.splitlines():
+        parts = line.split()
+        if len(parts) > 2 and parts[0] == "default":
+            return parts[2]
+    return None
+
 def spoof_identity(iface, mac, ip):
     print("[*] Applying spoofed MAC and IP...")
     subprocess.run(["ip", "link", "set", iface, "down"])
@@ -424,7 +436,7 @@ def spoof_identity(iface, mac, ip):
     subprocess.run(["ip", "link", "set", iface, "up"])
     subprocess.run(["ip", "addr", "flush", "dev", iface])
     subprocess.run(["ip", "addr", "add", f"{ip}/24", "dev", iface])
-    gateway = ".".join(ip.split(".")[:-1]) + ".1"
+    gateway = get_gateway(iface) or ".".join(ip.split(".")[:-1]) + ".1"
     subprocess.run(["ip", "route", "add", "default", "via", gateway])
 
 def test_connectivity():
@@ -436,11 +448,15 @@ def check_captive_portal():
     url = "http://connectivitycheck.gstatic.com/generate_204"
     result = subprocess.run(["curl", "-s", "-I", url], capture_output=True, text=True)
 
-    if "204" in result.stdout:
+    first_line = result.stdout.splitlines()[0] if result.stdout else ""
+    status_code = first_line.split()[1] if len(first_line.split()) > 1 else ""
+    if status_code == "204":
         print("[✓] No captive portal detected via primary check.")
         # Fallback check using example.com
         fallback = subprocess.run(["curl", "-s", "-I", "http://example.com"], capture_output=True, text=True)
-        if any(code in fallback.stdout for code in ["301", "302", "303", "307", "308"]):
+        fb_first = fallback.stdout.splitlines()[0] if fallback.stdout else ""
+        fb_code = fb_first.split()[1] if len(fb_first.split()) > 1 else ""
+        if fb_code in ("301", "302", "303", "307", "308"):
             print("[!] Redirect detected on fallback domain — captive portal likely present.")
             print(fallback.stdout)
             return True
@@ -521,7 +537,7 @@ Select mode:
 
         portal_present = check_captive_portal()
         if portal_present:
-            portal_detected = input("[?] Captive portal detected. To continue, you need the MAC of an authenticated AND connected client! To find one, open Sniffixx in a second shell instance, open thr captive portal bypass menu once again, selecting option 2 (existing connection). From thr deep scan menu monitor the network and isolate one client. Thrn switch back to this shell and continue with the bypass. Attempt bypass now? (y/n): ").lower() == "y"
+            portal_detected = input("[?] Captive portal detected. To continue, you need the MAC of an authenticated AND connected client! To find one, open Sniffixx in a second shell instance, open the captive portal bypass menu once again, selecting option 2 (existing connection). From the deep scan menu monitor the network and isolate one client. Then switch back to this shell and continue with the bypass. Attempt bypass now? (y/n): ").lower() == "y"
             if portal_detected:
                 mac = input("[?] Enter MAC to spoof: ").strip()
                 ip = input("[?] Enter IP to spoof: ").strip()

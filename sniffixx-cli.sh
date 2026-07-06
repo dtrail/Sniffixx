@@ -1,6 +1,9 @@
 #!/bin/bash
 VERSION="1.0.0"
 
+# ANSI color definitions
+red='\033[0;31m'; green='\033[0;32m'; yellow='\033[1;33m'; blue='\033[0;34m'; NC='\033[0m'; nc='\033[0m'
+
 # Parse CLI arguments
 case "${1:-}" in
     --help|-h)
@@ -211,6 +214,22 @@ list_adapters() {
     ADAPTER_COUNT=$count
 }
 
+# List adapters and let user select one
+select_adapter() {
+    list_adapters
+    if [ -z "${ADAPTER_COUNT:-0}" ] || [ "$ADAPTER_COUNT" -eq 0 ]; then
+        echo "No adapters available."
+        return 1
+    fi
+    read -p "Enter adapter number: " adapter_num
+    if [[ ! "$adapter_num" =~ ^[0-9]+$ ]] || [ "$adapter_num" -lt 1 ] || [ "$adapter_num" -gt "$ADAPTER_COUNT" ]; then
+        echo "Invalid selection. Please enter a number between 1 and $ADAPTER_COUNT."
+        return 1
+    fi
+    adapter="${ADAPTERS[$((adapter_num-1))]}"
+    echo "Selected adapter: $adapter"
+}
+
 #reset adapter
 reset_adapter() {
       echo "Resetting adapter..."
@@ -226,6 +245,10 @@ reset_adapter() {
 
 # scan 
 dump_networks() {
+  if [ -z "$adapter" ]; then
+    echo "No adapter selected. Please select a Wi-Fi adapter first."
+    return 1
+  fi
   timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
 airodump-ng "$adapter" -w "$workdir/dump/dump_$timestamp" --manufacturer --band abg
 }
@@ -233,13 +256,13 @@ airodump-ng "$adapter" -w "$workdir/dump/dump_$timestamp" --manufacturer --band 
 # Function to sniff with tcpdump
 sniff_tcpdump() {
     echo "Starting tcpdump on $1..."
-    sudo tcpdump -i $1 -w "$workdir/dump/tcp/${1}_tcpdump_$(date +%F_%T).pcap"
+    sudo tcpdump -i "$1" -w "$workdir/dump/tcp/${1}_tcpdump_$(date +%F_%T).pcap"
 }
 
 # Function to sniff with tshark
 sniff_tshark() {
     echo "Starting tshark on $1..."
-    sudo tshark -i $1 -w "$workdir/dump/tshark/${1}_tshark_$(date +%F_%T).pcap"
+    sudo tshark -i "$1" -w "$workdir/dump/tshark/${1}_tshark_$(date +%F_%T).pcap"
 }
 
 
@@ -585,8 +608,14 @@ wordlist_helper() {
 
 # WPS Attack Environment - Pixie Dust Menu
 pixie_dust_menu() {
+    local old_trap
+    old_trap=$(trap -p INT 2>/dev/null || echo "")
     trap 'echo "Returning to menu..."; return 1' INT
     
+    if [ -z "$adapter" ]; then
+        echo "No adapter selected. Please select a Wi-Fi adapter first."
+        return 1
+    fi
     echo "Preparing for WPS Attacks..."
     sleep 1
     echo ""
@@ -683,10 +712,14 @@ pixie_dust_menu() {
                 ;;
         esac
     done
+    # Restore original trap
+    eval "$old_trap"
 }
 
 # Special Brute Force using PIN file
 special_bruteforce_menu() {
+    local old_trap_sbf
+    old_trap_sbf=$(trap -p INT 2>/dev/null || echo "")
     trap 'echo "Cancelled, returning to menu..."; return 1' INT
     
     if [[ -z "$adapter" ]]; then
@@ -828,6 +861,8 @@ special_bruteforce_menu() {
             echo "Invalid choice"
             ;;
     esac
+    # Restore original trap
+    eval "$old_trap_sbf"
 }
 
 # Function to enable monitor mode
@@ -880,6 +915,8 @@ disable_monitor_mode() {
 
 # Monitor mode menu
 monitor_mode_menu() {
+    local old_trap_mon
+    old_trap_mon=$(trap -p INT 2>/dev/null || echo "")
     trap 'echo "Returning to menu..."; return 1' INT
     
     while true; do
@@ -913,10 +950,15 @@ monitor_mode_menu() {
                 ;;
         esac
     done
+    eval "$old_trap_mon"
 }
 
 
 scan_wps_networks() {
+    if [ -z "$adapter" ]; then
+        echo "No adapter selected. Please select a Wi-Fi adapter first."
+        return 1
+    fi
     echo -e "${yellow}Scanning for WPS-enabled networks...${nc}"
     sudo airmon-ng check kill
 
@@ -928,7 +970,7 @@ scan_wps_networks() {
     fi
 
     # Store and number the entries
-    IFS=$'\n' read -d '' -r -a networks <<< "$results"
+    mapfile -t networks <<< "$results"
     echo -e "${blue}Available WPS networks:${nc}"
     for i in "${!networks[@]}"; do
         echo "$((i+1)). ${networks[$i]}"
@@ -952,6 +994,11 @@ scan_wps_networks() {
 wps_crack() {
     if [[ -z "$adapter" ]]; then
         echo "No adapter selected. Please select a Wi-Fi adapter first."
+        return 1
+    fi
+    
+    if [[ -z "$selected_bssid" ]]; then
+        echo "No network selected. Use option 8 (WPS Networks) to scan and select a network first."
         return 1
     fi
     
@@ -983,6 +1030,8 @@ wps_crack() {
 
 # Handshake grabber
 handshake_grabber_menu() {
+    local old_trap_hs
+    old_trap_hs=$(trap -p INT 2>/dev/null || echo "")
     trap 'echo "Returning to menu..."; return 1' INT
     
     while true; do
@@ -999,23 +1048,26 @@ handshake_grabber_menu() {
                 echo -e "${yellow}Scanning for networks on $adapter...${nc}"
                 sudo airodump-ng "$adapter" -w "$handshake_dir/scan" --output-format csv --write-interval 1 &
                 scan_pid=$!
-                old_trap=$(trap -p SIGINT)
+                local old_inner_trap
+                old_inner_trap=$(trap -p SIGINT 2>/dev/null || echo "")
                 trap '' SIGINT
                 read -n1 -r -p "Press any key to stop the scan..." key
                 echo ""
-                trap - SIGINT
+                eval "$old_inner_trap"
                 sudo kill "$scan_pid"
                 sleep 2
                 echo -e "${blue}Available networks:${nc}"
-                if [ -f "$handshake_dir/scan-01.csv" ]; then
-                    awk -F',' 'NR>2 && $1!="" && NF>14 {print NR-2 " - BSSID: " $1 " | Kanal: " $4 " | ESSID: " $14}' "$handshake_dir/scan-01.csv"
+                local latest_scan
+                latest_scan=$(ls -t "$handshake_dir"/scan-*.csv 2>/dev/null | head -1)
+                if [ -n "$latest_scan" ] && [ -f "$latest_scan" ]; then
+                    awk -F',' 'NR>2 && $1!="" && NF>14 {print NR-2 " - BSSID: " $1 " | Kanal: " $4 " | ESSID: " $14}' "$latest_scan"
                     read -p "Enter the number of the target network: " network_number
-                    bssid=$(awk -F"," -v row="$((network_number + 2))" 'NR==row {print $1}' "$handshake_dir/scan-01.csv")
-                    essid=$(awk -F"," -v row="$((network_number + 2))" 'NR==row {print $14}' "$handshake_dir/scan-01.csv")
+                    bssid=$(awk -F"," -v row="$((network_number + 2))" 'NR==row {print $1}' "$latest_scan")
+                    essid=$(awk -F"," -v row="$((network_number + 2))" 'NR==row {print $14}' "$latest_scan")
                     echo "$bssid" > "$handshake_dir/filterlist_ap.txt"
                     echo -e "${green}Netzwerk $essid (BSSID: $bssid) added to filter list.${nc}"
                 else
-                    echo -e "${red}Datei $handshake_dir/scan-01.csv not found. Please run scan again!${nc}"
+                    echo -e "${red}No scan CSV file found in $handshake_dir. Please run scan again!${nc}"
                 fi
                 ;;
             2)
@@ -1037,11 +1089,14 @@ handshake_grabber_menu() {
                 echo -e "${yellow}Select adapter for scanning:${nc}"
                 list_adapters
                 read -p "Enter the number of the adapter to use for scanning: " scan_adapter_number
-                scan_adapter="${adapters[$((scan_adapter_number - 1))]}"
+                scan_adapter="${ADAPTERS[$((scan_adapter_number - 1))]}"
                 echo -e "${yellow}Select adapter for deauthentication:${nc}"
                 list_adapters
                 read -p "Enter the number of the adapter to use for deauthentication: " deauth_adapter_number
-                deauth_adapter="${adapters[$((deauth_adapter_number - 1))]}"
+                deauth_adapter="${ADAPTERS[$((deauth_adapter_number - 1))]}"
+                if [ -z "$bssid" ]; then
+                    echo -e "${red}No network selected! Please scan and select a network first.${nc}"
+                else
                 if [ "$scan_adapter" == "$deauth_adapter" ]; then
                     echo -e "${yellow}Using $scan_adapter for both scanning and deauthentication.${nc}"
                 fi
@@ -1062,6 +1117,7 @@ handshake_grabber_menu() {
                         echo -e "${red}Invalid option. Returning to handshake grabber menu.${nc}"
                         ;;
                 esac
+                fi
                 ;;
             4)
                 return
@@ -1071,6 +1127,7 @@ handshake_grabber_menu() {
                 ;;
         esac
     done
+    eval "$old_trap_hs"
 }
 
 enter_network()
@@ -1093,6 +1150,11 @@ echo "wscan done."
 bypass_cap()
 {
   trap 'echo "opcapture was interrupted. Returning to main script..."' SIGINT
+
+  if [ ! -f "$workdir/opcapture.py" ]; then
+    echo "opcapture.py not found in $workdir. Reinstall Sniffixx."
+    return 1
+  fi
 
 echo "Running opcapture..."
 python3 "$workdir/opcapture.py"
@@ -1179,22 +1241,8 @@ while true; do
     read -p "Choose an option: " option
 
     case $option in
-        1)
-            list_adapters
-            ;;
-        2)
-            list_adapters
-            if [ -z "${ADAPTER_COUNT:-0}" ] || [ "$ADAPTER_COUNT" -eq 0 ]; then
-                echo "No adapters available."
-            else
-                read -p "Enter adapter number: " adapter_num
-                if [[ ! "$adapter_num" =~ ^[0-9]+$ ]] || [ "$adapter_num" -lt 1 ] || [ "$adapter_num" -gt "$ADAPTER_COUNT" ]; then
-                    echo "Invalid selection. Please enter a number between 1 and $ADAPTER_COUNT."
-                else
-                    adapter="${ADAPTERS[$((adapter_num-1))]}"
-                    echo "Selected adapter: $adapter"
-                fi
-            fi
+        1|2)
+            select_adapter
             ;;
        22)
             reset_adapter
@@ -1203,21 +1251,21 @@ while true; do
             if [ -z "$adapter" ]; then
                 echo "No adapter selected. Please select a Wi-Fi adapter first."
             else
-                sniff_tcpdump $adapter
+                sniff_tcpdump "$adapter"
             fi
             ;;
         4)
             if [ -z "$adapter" ]; then
                 echo "No adapter selected. Please select a Wi-Fi adapter first."
             else
-                sniff_tshark $adapter
+                sniff_tshark "$adapter"
             fi
             ;;
         5)
             if [ -z "$adapter" ]; then
                 echo "No adapter selected. Please select a Wi-Fi adapter first."
             else
-                capture_pmkid $adapter
+                capture_pmkid "$adapter"
             fi
             ;;
         6)

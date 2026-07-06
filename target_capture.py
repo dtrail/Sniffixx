@@ -13,12 +13,15 @@ def start_capture(mon_iface, bssid, channel, duration=30):
 
 def extract_clients(pcap_file, bssid):
     print("[*] Parsing capture for associated clients...")
-    result = subprocess.run(["tshark", "-r", pcap_file, "-Y", f"wlan.bssid == {bssid}", "-T", "fields", "-e", "wlan.ta", "-e", "wlan.ra"],
+    result = subprocess.run(["tshark", "-r", pcap_file, "-Y", f'wlan.bssid == "{bssid}"', "-T", "fields", "-e", "wlan.ta", "-e", "wlan.ra"],
                             capture_output=True, text=True)
 
     macs = set()
     for line in result.stdout.splitlines():
-        ta, ra = line.strip().split()
+        fields = line.strip().split()
+        if len(fields) < 2:
+            continue
+        ta, ra = fields[0], fields[1]
         for mac in [ta, ra]:
             if mac.lower() != bssid.lower():
                 macs.add(mac)

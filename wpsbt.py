@@ -101,7 +101,7 @@ def run_reaver_pin(adapter, bssid, pin, timeout_sec=REAVER_TIMEOUT_SECONDS):
         return False, "[timeout]"
 
 def run_bully_pin(adapter, bssid, pin, timeout_sec=BULLY_TIMEOUT_SECONDS):
-    cmd = ["bully", adapter, "-b", bssid, "-c", pin, "-v", "3"]
+    cmd = ["bully", adapter, "-b", bssid, "-p", pin, "-v", "3"]
     try:
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_sec)
         text = (out.stdout or "") + (out.stderr or "")
