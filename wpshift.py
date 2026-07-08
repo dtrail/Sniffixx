@@ -84,16 +84,16 @@ def generate_vendor_pins(mac, vendor):
 
 def list_adapters():
     print("[bold cyan]Available WiFi Adapters:[/bold cyan]")
-    os.system("iw dev | grep Interface")
+    subprocess.run(["bash", "-c", "iw dev | grep Interface"])
 
 def toggle_monitor_mode(adapter, enable=True):
     mode = "start" if enable else "stop"
     print(f"[yellow]Turning {'on' if enable else 'off'} monitor mode for {adapter}...[/yellow]")
-    os.system(f"airmon-ng {mode} {adapter}")
+    subprocess.run(["airmon-ng", mode, adapter])
 
 def scan_networks(adapter):
     print("[bold green]Scanning for networks... Press Ctrl+C to stop.[/bold green]")
-    os.system(f"airodump-ng {adapter}")
+    subprocess.run(["airodump-ng", adapter])
 
 def capture_probe(bssid, iface="wlan0mon", vuln_db=None):
     ap_info = {}

@@ -1,20 +1,41 @@
 #!/usr/bin/env python3
-import subprocess, re, time
+import subprocess, sys, shutil
+
+def check_tool(name):
+    if not shutil.which(name):
+        print(f"❌ {name} not found. Install it first.")
+        sys.exit(1)
 
 def start_capture(mon_iface, bssid, channel, duration=30):
     print(f"[*] Locking {mon_iface} to channel {channel}...")
-    subprocess.run(["iw", mon_iface, "set", "channel", str(channel)])
+    result = subprocess.run(["iw", mon_iface, "set", "channel", str(channel)],
+                            capture_output=True, text=True)
+    if result.returncode != 0:
+        print(f"❌ Failed to set channel: {result.stderr.strip()}")
+        sys.exit(1)
 
     print(f"[*] Starting capture on BSSID {bssid} for {duration}s...")
     pcap_file = "/tmp/target_capture.pcap"
-    subprocess.run(["timeout", f"{duration}s", "tcpdump", "-i", mon_iface, "-w", pcap_file, "-n"], stderr=subprocess.DEVNULL)
+    result = subprocess.run(
+        ["timeout", f"{duration}s", "tcpdump", "-i", mon_iface, "-w", pcap_file, "-n"],
+        stderr=subprocess.PIPE, stdout=subprocess.DEVNULL
+    )
+    if result.returncode != 0 and result.returncode != 124:  # 124 = timeout (expected)
+        print(f"❌ tcpdump failed: {result.stderr.decode().strip()}")
+        sys.exit(1)
 
     return pcap_file
 
 def extract_clients(pcap_file, bssid):
     print("[*] Parsing capture for associated clients...")
-    result = subprocess.run(["tshark", "-r", pcap_file, "-Y", f'wlan.bssid == "{bssid}"', "-T", "fields", "-e", "wlan.ta", "-e", "wlan.ra"],
-                            capture_output=True, text=True)
+    result = subprocess.run(
+        ["tshark", "-r", pcap_file, "-Y", f'wlan.bssid == "{bssid}"',
+         "-T", "fields", "-e", "wlan.ta", "-e", "wlan.ra"],
+        capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        print(f"❌ tshark failed: {result.stderr.strip()}")
+        sys.exit(1)
 
     macs = set()
     for line in result.stdout.splitlines():
@@ -29,9 +50,21 @@ def extract_clients(pcap_file, bssid):
     return sorted(macs)
 
 def main():
+    check_tool("tcpdump")
+    check_tool("tshark")
+
     mon_iface = input("[?] Monitor-mode interface (e.g. wlan0mon): ").strip()
+    if not mon_iface:
+        print("❌ Interface name required.")
+        sys.exit(1)
     bssid = input("[?] Target BSSID: ").strip()
+    if not bssid:
+        print("❌ BSSID required.")
+        sys.exit(1)
     channel = input("[?] Channel: ").strip()
+    if not channel.isdigit():
+        print("❌ Channel must be a number.")
+        sys.exit(1)
 
     pcap = start_capture(mon_iface, bssid, channel)
     clients = extract_clients(pcap, bssid)

@@ -1,4 +1,5 @@
 #!/bin/bash
+set -o pipefail
 VERSION="1.0.0"
 
 # ANSI color definitions
@@ -256,13 +257,13 @@ airodump-ng "$adapter" -w "$workdir/dump/dump_$timestamp" --manufacturer --band 
 # Function to sniff with tcpdump
 sniff_tcpdump() {
     echo "Starting tcpdump on $1..."
-    sudo tcpdump -i "$1" -w "$workdir/dump/tcp/${1}_tcpdump_$(date +%F_%T).pcap"
+    sudo tcpdump -i "$1" -w "$workdir/dump/tcp/${1}_tcpdump_$(date +%F_%H-%M-%S).pcap"
 }
 
 # Function to sniff with tshark
 sniff_tshark() {
     echo "Starting tshark on $1..."
-    sudo tshark -i "$1" -w "$workdir/dump/tshark/${1}_tshark_$(date +%F_%T).pcap"
+    sudo tshark -i "$1" -w "$workdir/dump/tshark/${1}_tshark_$(date +%F_%H-%M-%S).pcap"
 }
 
 
@@ -1079,7 +1080,7 @@ handshake_grabber_menu() {
                     if [[ "$overwrite" =~ ^[Yy]$ ]]; then
                         output_file="$pmkid_dir/pmkid.pcapng"
                     else
-                        output_file="$pmkid_dir/pmkid_$(date +%F_%T).pcapng"
+                        output_file="$pmkid_dir/pmkid_$(date +%F_%H-%M-%S).pcapng"
                     fi
                     sudo hcxdumptool -i "$adapter" --enable_status=1 -o "$output_file" --filtermode=2 --filterlist_ap="$handshake_dir/filterlist_ap.txt"
                     echo -e "${green}PMKID saved to $output_file gespeichert.${nc}"
@@ -1145,6 +1146,7 @@ python3 "$workdir/wscan.py"
 echo
 echo
 echo "wscan done."
+trap 'echo ""; echo "Returning to menu..."' INT
 }
 
 bypass_cap()
@@ -1153,6 +1155,7 @@ bypass_cap()
 
   if [ ! -f "$workdir/opcapture.py" ]; then
     echo "opcapture.py not found in $workdir. Reinstall Sniffixx."
+    trap 'echo ""; echo "Returning to menu..."' INT
     return 1
   fi
 
@@ -1162,6 +1165,7 @@ python3 "$workdir/opcapture.py"
 echo
 echo
 echo "opcapture done."
+trap 'echo ""; echo "Returning to menu..."' INT
 }
 
 router_autoscan()
@@ -1169,7 +1173,7 @@ router_autoscan()
   trap 'echo "rs_autoscan was interrupted. Returning to main script..."' SIGINT
 
 echo
-echo "*NOTE: This requires RouterSploit to be installed in a virtual environment!"
+echo "*NOTE: This requires RouterSploit to be installed! (apt install routersploit)"
 echo 
 echo "Check for help: github.com/dtrail/fix-and-run-routersploit"
 echo
@@ -1178,6 +1182,7 @@ echo
 echo
 echo
 echo "rs_autoscan done."
+trap 'echo ""; echo "Returning to menu..."' INT
 }
 
 check_creds()

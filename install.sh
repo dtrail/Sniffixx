@@ -52,8 +52,11 @@ missing_deps=()
 check_dep() {
     local cmd="$1"
     local pkg="${2:-$cmd}"
+    local optional="${3:-false}"
     if ! command -v "$cmd" &>/dev/null; then
-        missing_deps+=("$pkg")
+        if [[ "$optional" != "true" ]]; then
+            missing_deps+=("$pkg")
+        fi
         return 1
     fi
     echo -e "  ${GREEN}✓${NC} $cmd"
@@ -70,11 +73,23 @@ check_dep "nmap"
 check_dep "python3"
 
 # Optional but recommended
-check_dep "aireplay-ng" || true
-check_dep "mdk4" || true
-check_dep "tcpdump" || true
-check_dep "tshark" || true
-check_dep "macchanger" || true
+check_dep "aireplay-ng" "aireplay-ng" "true" || true
+check_dep "mdk4" "mdk4" "true" || true
+check_dep "tcpdump" "tcpdump" "true" || true
+check_dep "tshark" "tshark" "true" || true
+check_dep "macchanger" "macchanger" "true" || true
+check_dep "routersploit" "routersploit" "true" || true
+
+# Python package dependencies (optional, for wpshift.py)
+echo ""
+echo -e "${YELLOW}Checking optional Python packages...${NC}"
+for pkg in scapy rich; do
+    if python3 -c "import $pkg" 2>/dev/null; then
+        echo -e "  ${GREEN}✓${NC} python3-$pkg"
+    else
+        echo -e "  ${YELLOW}✗${NC} python3-$pkg (pip install $pkg)"
+    fi
+done
 
 if [[ ${#missing_deps[@]} -gt 0 ]]; then
     echo ""
@@ -89,10 +104,10 @@ if [[ ${#missing_deps[@]} -gt 0 ]]; then
     if [[ "${choice,,}" == "y" || "${choice,,}" == "yes" ]]; then
         echo -e "${YELLOW}Attempting to install recommended packages...${NC}"
         # Metapackages are efficient. kali-tools-wifi covers many, but we'll also list specifics.
-        install_packages="aircrack-ng hcxdumptool hcxtools reaver hashcat nmap mdk4 tshark macchanger"
+        install_packages="aircrack-ng hcxdumptool hcxtools reaver hashcat nmap mdk4 tshark macchanger routersploit"
         
-        echo "Running: sudo apt update && sudo apt install -y $install_packages"
-        if ! (sudo apt update && sudo apt install -y $install_packages); then
+        echo "Running: apt update && apt install -y $install_packages"
+        if ! (apt update && apt install -y $install_packages); then
             echo -e "${RED}APT installation failed. Please try installing the tools manually and re-run the script.${NC}"
             exit 1
         fi
@@ -178,7 +193,7 @@ echo "Set the SNX_ONESHOT environment variable to its location:"
 echo "  export SNX_ONESHOT=/path/to/oneshot.py"
 echo "Or ensure it exists at /sdcard/nh_files/modules/oneshot.py"
 echo ""
-echo "Uninstall with: sudo $SCRIPT_DIR/install.sh --uninstall"
+echo "Uninstall with: sudo ./install.sh --uninstall (from the script directory)"
 echo ""
 
 exit 0

@@ -430,13 +430,17 @@ def get_gateway(iface):
     return None
 
 def spoof_identity(iface, mac, ip):
+    # Extract current config before flushing IPs
+    _, subnet = get_subnet_from_route(iface)
+    cidr = subnet.split("/")[-1] if subnet and "/" in subnet else "24"
+    gateway = get_gateway(iface) or ".".join(ip.split(".")[:-1]) + ".1"
+    
     print("[*] Applying spoofed MAC and IP...")
     subprocess.run(["ip", "link", "set", iface, "down"])
     subprocess.run(["macchanger", "-m", mac, iface])
     subprocess.run(["ip", "link", "set", iface, "up"])
     subprocess.run(["ip", "addr", "flush", "dev", iface])
-    subprocess.run(["ip", "addr", "add", f"{ip}/24", "dev", iface])
-    gateway = get_gateway(iface) or ".".join(ip.split(".")[:-1]) + ".1"
+    subprocess.run(["ip", "addr", "add", f"{ip}/{cidr}", "dev", iface])
     subprocess.run(["ip", "route", "add", "default", "via", gateway])
 
 def test_connectivity():
