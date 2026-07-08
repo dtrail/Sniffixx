@@ -53,3 +53,4 @@ Thumbs.db
 
 # Backup files
 *.bak
+.opencode/
