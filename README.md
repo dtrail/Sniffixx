@@ -166,15 +166,15 @@ Current terminal output includes:
 | D | Dump all networks |
 
 
-## Workflow Example
+## Workflow Example WITHOUT monitor mode! 
 
 1. **Select Adapter**: Choose your WiFi adapter (for now you need to type the given adapter name, not the number)
-2. **Scan Networks**: Use option 1 or 11 to discover networks
-3. **Capture Handshake/PMKID**: Use options 5 or 11
-4. **Convert**: Convert captures to hashcat format (option 6)
-5. **Crack**: Use hashcat or john to crack (option 7)
-6. **Connect to (cracked) network**: After gained access, connect to the network (Option 12) and use the then given option to router exploitation
-7. **Exploit router**: (Either Option 15 or elevated from option 12:) Executes an automated Nmap scan and provides you with usable IPs to work with in Routersploit, which will be opened for you.
+2. **Scan Networks**: Use option w to enter WPS Attack Environment and try first with Pixie Dust. 
+3. **Crack WIFI**: d-link, Vodafone and TP-Link routers are often vulnerable. 
+4. **Credentials** will be saved automatically to a set path (notified in terminal) 
+5. **Connect**: Use option 12 to connect. It will mark any cracked AP in the list after scanning. 
+6. **Subnet scan**: Sniffixx Automatically probes for IPs and devices. Select an appropriate option when shown. Copy the subnet Adress that is listed near your selected wifi adapter. For best results use option 3 for an aggressive stealth scan (careful, though! Could leave traces.)
+7. **Router Exploitation**: use the then given option to router exploitation via Routersploit. Either Option 15 or elevated from option 12, executes an automated Nmap scan and provides you with usable IPs to work with in Routersploit, which will be opened for you.
 
 
 ## Configuration
