@@ -1246,7 +1246,10 @@ while true; do
     read -p "Choose an option: " option
 
     case $option in
-        1|2)
+        1)
+            list_adapters
+            ;;
+        2)
             select_adapter
             ;;
        22)

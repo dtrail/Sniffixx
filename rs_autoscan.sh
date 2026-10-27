@@ -2,9 +2,22 @@
 set -o pipefail
 
 echo "Available interfaces:"
-ip -o link show | awk -F': ' '{print $2}' | grep -v lo
+mapfile -t IFACES < <(ip -o link show | awk -F': ' '{print $2}' | cut -d'@' -f1 | grep -v '^lo$')
+if [ ${#IFACES[@]} -eq 0 ]; then
+    echo "[!] No network interfaces found. Exiting."
+    exit 1
+fi
+for i in "${!IFACES[@]}"; do
+    echo " $((i+1))) ${IFACES[$i]}"
+done
 
-read -p "Enter the interface to use for Nmap scan: " iface
+read -p "Enter interface number for Nmap scan: " iface_sel
+if [[ "$iface_sel" =~ ^[0-9]+$ ]] && (( iface_sel >= 1 && iface_sel <= ${#IFACES[@]} )); then
+    iface="${IFACES[$((iface_sel-1))]}"
+else
+    iface="$iface_sel"
+fi
+echo "Selected interface: $iface"
 
 # Prompt for subnet
 read -p "Enter subnet to scan (e.g. 192.168.1.0/24): " SUBNET

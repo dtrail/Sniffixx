@@ -27,7 +27,7 @@ fi
 
 if [[ "$UNINSTALL" == "true" ]]; then
     echo -e "${YELLOW}Uninstalling Sniffixx...${NC}"
-    rm -f "$INSTALL_TARGET/sniffixx-cli"
+    rm -f "$INSTALL_TARGET/sniffixx-cli" "$INSTALL_TARGET/sniffixx"
     rm -rf "$WORKDIR"
     echo -e "${GREEN}Sniffixx uninstalled successfully.${NC}"
     exit 0
@@ -157,7 +157,8 @@ echo -e "${YELLOW}Installing files...${NC}"
 # Copy main script
 cp "$SCRIPT_DIR/sniffixx-cli.sh" "$INSTALL_TARGET/sniffixx-cli"
 chmod +x "$INSTALL_TARGET/sniffixx-cli"
-echo -e "  ${GREEN}✓${NC} Installed: $INSTALL_TARGET/sniffixx-cli"
+ln -sf "$INSTALL_TARGET/sniffixx-cli" "$INSTALL_TARGET/sniffixx"
+echo -e "  ${GREEN}✓${NC} Installed: $INSTALL_TARGET/sniffixx-cli (and $INSTALL_TARGET/sniffixx)"
 
 # Copy Python scripts
 for script in wscan.py wpsbt.py opcapture.py target_capture.py wpshift.py; do

@@ -92,6 +92,25 @@ def list_interfaces():
     result = subprocess.run(["iw", "dev"], capture_output=True, text=True)
     return re.findall(r"Interface (\w+)", result.stdout)
 
+def choose_interface(prompt_text="Select interface number: "):
+    interfaces = list_interfaces()
+    if not interfaces:
+        print("❌ No wireless interfaces found.")
+        sys.exit(1)
+    while True:
+        print("\nAvailable wireless interfaces:")
+        for i, ifc in enumerate(interfaces, 1):
+            print(f"  {i}) {ifc}")
+        sel = input(prompt_text).strip()
+        if sel.isdigit() and 1 <= int(sel) <= len(interfaces):
+            chosen = interfaces[int(sel) - 1]
+            print(f"Selected interface: {chosen}")
+            return chosen
+        if sel in interfaces:
+            print(f"Selected interface: {sel}")
+            return sel
+        print(f"Invalid selection. Please enter a number between 1 and {len(interfaces)}.")
+
 def spoof_mac(iface):
     print("[*] Spoofing MAC address...")
     subprocess.run(["ip", "link", "set", iface, "down"])
@@ -501,17 +520,10 @@ Select mode:
 
     if choice == "1":
         # Guided wizard mode
-        interfaces = list_interfaces()
-        if not interfaces:
-            print("❌ No wireless interfaces found.")
-            sys.exit(1)
-        print("\n[*] Available interfaces:", ", ".join(interfaces))
-        iface = input("[?] Enter your wireless interface: ").strip()
+        iface = choose_interface("Select wireless interface number: ")
         guided_wizard(iface)
     elif choice == "3":
-        interfaces = list_interfaces()
-        print("\n[*] Available interfaces:", ", ".join(interfaces))
-        iface = input("[?] Enter the connected interface to use: ").strip()
+        iface = choose_interface("Select connected interface number: ")
         
         ip, subnet = get_subnet_from_route(iface)
         if ip and subnet:
@@ -526,9 +538,7 @@ Select mode:
             sys.exit(1)
 
     elif choice == "2":
-        interfaces = list_interfaces()
-        print("\n[*] Available interfaces:", ", ".join(interfaces))
-        iface = input("[?] Enter your wireless interface: ").strip()
+        iface = choose_interface("Select wireless interface number: ")
         scan_reminder()
         spoof_mac(iface)
         ssid = pick_network_with_rescan(iface)
